@@ -1,7 +1,9 @@
 package ru.hse.cs.java2020.task03;
 
+import ru.hse.cs.java2020.task03.telegram.TelegramHandler;
+
 public class Main {
     public static void main(String[] args) {
-        System.out.println("Hello World");
+        TelegramHandler telegramClient = new TelegramHandler();
     }
 }
