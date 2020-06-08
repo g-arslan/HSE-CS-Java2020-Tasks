@@ -1,5 +1,6 @@
 package ru.hse.cs.java2020.task03.telegram;
 
+import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.UpdatesListener;
 import com.pengrad.telegrambot.model.Update;
 import com.pengrad.telegrambot.model.request.InlineKeyboardMarkup;
@@ -8,12 +9,14 @@ import com.pengrad.telegrambot.model.request.ReplyKeyboardMarkup;
 import com.pengrad.telegrambot.model.request.ReplyKeyboardRemove;
 import com.pengrad.telegrambot.request.EditMessageText;
 import com.pengrad.telegrambot.request.SendMessage;
+import ru.hse.cs.java2020.task03.dao.ITrackerIssueDao;
+import ru.hse.cs.java2020.task03.dao.IUserDao;
 import ru.hse.cs.java2020.task03.models.TrackerIssue;
 import ru.hse.cs.java2020.task03.models.User;
 import ru.hse.cs.java2020.task03.tracker.ITrackerClient;
 import ru.hse.cs.java2020.task03.tracker.models.Queue;
-import ru.hse.cs.java2020.task03.utils.Factory;
 
+import java.util.ResourceBundle;
 import java.util.regex.Pattern;
 
 import static ru.hse.cs.java2020.task03.telegram.Utils.checkIsCmd;
@@ -21,8 +24,23 @@ import static ru.hse.cs.java2020.task03.telegram.Utils.generateIssueLink;
 import static ru.hse.cs.java2020.task03.tracker.Utils.formatIssueWithCommentsPrettyHtml;
 
 public class TelegramHandler {
-    public TelegramHandler() {
-        Factory.getTelegramBot().setUpdatesListener(updates -> {
+    private final TelegramBot      bot;
+    private final ITrackerClient   trackerClient;
+    private final IUserDao         userDao;
+    private final ITrackerIssueDao trackerIssueDao;
+    private final ResourceBundle   bundle;
+
+    public TelegramHandler(TelegramBot bot, ITrackerClient trackerClient,
+            IUserDao userDao, ITrackerIssueDao trackerIssueDao, ResourceBundle bundle) {
+        this.bot = bot;
+        this.trackerClient = trackerClient;
+        this.userDao = userDao;
+        this.trackerIssueDao = trackerIssueDao;
+        this.bundle = bundle;
+    }
+
+    public void startListener() {
+        bot.setUpdatesListener(updates -> {
             for (Update update : updates) {
                 handleUpdate(update);
             }
@@ -31,18 +49,32 @@ public class TelegramHandler {
         });
     }
 
-    private void handleUpdate(Update update) {
+    public void stopListener() {
+        bot.removeGetUpdatesListener();
+    }
+
+    public TelegramBot getBot() {
+        return bot;
+    }
+
+    public void handleUpdate(Update update) {
         if (update.callbackQuery() != null) {
-            handleCallbackQuery(Factory.getUserDao().getUser(update.callbackQuery().from().id()), update);
+            handleCallbackQuery(userDao.getUser(update.callbackQuery().from().id()), update);
             return;
         }
 
-        User user = Factory.getUserDao().getUser(update.message().from().id());
+        User user = userDao.getUser(update.message().from().id());
+
+        if (update.message().text() == null) {
+            sendTextMessage(user, update, bundle.getString("text.unknownCommand"));
+            return;
+        }
+
         if (user == null) {
             user = new User(update.message().from().id(), State.NEED_ORG_ID);
             user.setIssue(new TrackerIssue(update.message().from().id()));
-            Factory.getTrackerIssueDao().saveTrackerIssue(user.getIssue());
-            Factory.getUserDao().saveUser(user);
+            trackerIssueDao.saveTrackerIssue(user.getIssue());
+            userDao.saveUser(user);
         } else if (user.getOrganisationId() == null && user.getState() != State.EXPECT_ORG_ID) {
             updateState(user, State.NEED_ORG_ID);
         } else if (user.getTrackerAccessToken() == null && user.getState() != State.EXPECT_ACCESS_TOKEN
@@ -54,7 +86,7 @@ public class TelegramHandler {
 
         switch (user.getState()) {
             case NEED_ORG_ID:
-                handleNeedSmth(user, update, Factory.getTelegramBundle().getString("text.needOrgId"),
+                handleNeedSmth(user, update, bundle.getString("text.needOrgId"),
                         State.EXPECT_ORG_ID);
                 break;
             case EXPECT_ORG_ID:
@@ -62,42 +94,42 @@ public class TelegramHandler {
                 break;
             case NEED_ACCESS_TOKEN:
                 handleNeedSmth(user, update,
-                        String.format(Factory.getTelegramBundle().getString("text.needAccessToken"),
-                                Factory.getTrackerClient().getAuthLink()), State.EXPECT_ACCESS_TOKEN);
+                        String.format(bundle.getString("text.needAccessToken"),
+                                trackerClient.getAuthLink()), State.EXPECT_ACCESS_TOKEN);
                 break;
             case EXPECT_ACCESS_TOKEN:
                 handleExpectAccessToken(user, update);
                 break;
             case NEED_QUEUE:
-                handleNeedSmth(user, update, Factory.getTelegramBundle().getString("text.needQueue"),
+                handleNeedSmth(user, update, bundle.getString("text.needQueue"),
                         State.EXPECT_QUEUE);
                 break;
             case EXPECT_QUEUE:
                 handleExpectQueue(user, update);
                 break;
             case NEED_SUMMARY:
-                handleNeedSmth(user, update, Factory.getTelegramBundle().getString("text.needSummary"),
+                handleNeedSmth(user, update, bundle.getString("text.needSummary"),
                         State.EXPECT_SUMMARY);
                 break;
             case EXPECT_SUMMARY:
                 handleExpectSummary(user, update);
                 break;
             case NEED_DESCRIPTION:
-                handleNeedSmth(user, update, Factory.getTelegramBundle().getString("text.needDescription"),
+                handleNeedSmth(user, update, bundle.getString("text.needDescription"),
                         State.EXPECT_DESCRIPTION);
                 break;
             case EXPECT_DESCRIPTION:
                 handleExpectDescription(user, update);
                 break;
             case NEED_ASSIGN_YOU:
-                handleNeedSmth(user, update, Factory.getTelegramBundle().getString("text.needAssignYou"),
+                handleNeedSmth(user, update, bundle.getString("text.needAssignYou"),
                         State.EXPECT_ASSIGN_YOU);
                 break;
             case EXPECT_ASSIGN_YOU:
                 handleAssignYou(user, update);
                 break;
             case NEED_ISSUE_KEY:
-                handleNeedSmth(user, update, Factory.getTelegramBundle().getString("text.needIssueKey"),
+                handleNeedSmth(user, update, bundle.getString("text.needIssueKey"),
                         State.EXPECT_ISSUE_KEY);
                 break;
             case EXPECT_ISSUE_KEY:
@@ -110,21 +142,21 @@ public class TelegramHandler {
     }
 
     private Command classifyMessage(String text) {
-        if (Utils.checkIsCmd(text, "cancel")) {
+        if (Utils.checkIsCmd(text, "cancel", bundle)) {
             return Command.CANCEL;
-        } else if (Utils.checkIsCmd(text, "create_issue")) {
+        } else if (Utils.checkIsCmd(text, "create_issue", bundle)) {
             return Command.CREATE_ISSUE;
-        } else if (Utils.checkIsCmd(text, "get_issues_for_me")) {
+        } else if (Utils.checkIsCmd(text, "get_issues_for_me", bundle)) {
             return Command.GET_ISSUES_FOR_ME;
-        } else if (Utils.checkIsCmd(text, "get_issue")) {
+        } else if (Utils.checkIsCmd(text, "get_issue", bundle)) {
             return Command.GET_ISSUE;
-        } else if (Utils.checkIsCmd(text, "changeOrgId")) {
+        } else if (Utils.checkIsCmd(text, "changeOrgId", bundle)) {
             return Command.CHANGE_ORG_ID;
-        } else if (Utils.checkIsCmd(text, "changeAccessToken")) {
+        } else if (Utils.checkIsCmd(text, "changeAccessToken", bundle)) {
             return Command.CHANGE_ACCESS_TOKEN;
-        } else if (text.toLowerCase().equals(Factory.getTelegramBundle().getString("button.yes").toLowerCase())) {
+        } else if (text.toLowerCase().equals(bundle.getString("button.yes").toLowerCase())) {
             return Command.YES;
-        } else if (text.toLowerCase().equals(Factory.getTelegramBundle().getString("button.no").toLowerCase())) {
+        } else if (text.toLowerCase().equals(bundle.getString("button.no").toLowerCase())) {
             return Command.NO;
         }
         return Command.UNKNOWN;
@@ -142,18 +174,18 @@ public class TelegramHandler {
             switch (user.getState()) {
                 case MAIN_MENU:
                     sendMessage.replyMarkup(new ReplyKeyboardMarkup(
-                            new String[]{Factory.getTelegramBundle().getString("button.create_issue"),
-                                    Factory.getTelegramBundle().getString("button.get_issue")},
-                            new String[]{Factory.getTelegramBundle().getString("button.get_issues_for_me")},
-                            new String[]{Factory.getTelegramBundle().getString("button.changeOrgId"),
-                                    Factory.getTelegramBundle().getString("button.changeAccessToken")}
+                            new String[]{bundle.getString("button.create_issue"),
+                                    bundle.getString("button.get_issue")},
+                            new String[]{bundle.getString("button.get_issues_for_me")},
+                            new String[]{bundle.getString("button.changeOrgId"),
+                                    bundle.getString("button.changeAccessToken")}
                     ).resizeKeyboard(true));
                     break;
                 case EXPECT_ASSIGN_YOU:
                     sendMessage.replyMarkup(new ReplyKeyboardMarkup(
-                            new String[]{Factory.getTelegramBundle().getString("button.cancel")},
-                            new String[]{Factory.getTelegramBundle().getString("button.no"),
-                                    Factory.getTelegramBundle().getString("button.yes")}
+                            new String[]{bundle.getString("button.cancel")},
+                            new String[]{bundle.getString("button.no"),
+                                    bundle.getString("button.yes")}
                     ).resizeKeyboard(true));
                     break;
                 case EXPECT_DESCRIPTION:
@@ -163,14 +195,14 @@ public class TelegramHandler {
                 case EXPECT_ACCESS_TOKEN:
                 case EXPECT_ORG_ID:
                     sendMessage.replyMarkup(new ReplyKeyboardMarkup(
-                            new String[]{Factory.getTelegramBundle().getString("button.cancel")}
+                            new String[]{bundle.getString("button.cancel")}
                     ).resizeKeyboard(true));
                     break;
                 default:
                     sendMessage.replyMarkup(new ReplyKeyboardRemove());
             }
         }
-        Factory.getTelegramBot().execute(sendMessage.parseMode(ParseMode.HTML));
+        bot.execute(sendMessage.parseMode(ParseMode.HTML));
     }
 
     private void handleDefault(User user, Update update) {
@@ -196,19 +228,19 @@ public class TelegramHandler {
                 break;
             case UNKNOWN:
             default:
-                sendTextMessage(user, update, Factory.getTelegramBundle().getString("text.unknownCommand"));
+                sendTextMessage(user, update, bundle.getString("text.unknownCommand"));
         }
     }
 
     private void handleGetIssue(User user, Update update) {
-        if (!update.message().text().startsWith(Factory.getTelegramBundle().getString("command.get_issue"))
+        if (!update.message().text().startsWith(bundle.getString("command.get_issue"))
                 || update.message().text().length()
-                <= Factory.getTelegramBundle().getString("command.get_issue").length() + 1) {
+                <= bundle.getString("command.get_issue").length() + 1) {
             updateState(user, State.NEED_ISSUE_KEY);
             handleUpdate(update);
         } else {
             String data = update.message().text()
-                                .substring(Factory.getTelegramBundle().getString("command.get_issue").length() + 1)
+                                .substring(bundle.getString("command.get_issue").length() + 1)
                                 .replace('_', '-').strip();
             handleExpectIssueKey(user, update, data);
         }
@@ -226,50 +258,50 @@ public class TelegramHandler {
     }
 
     private void handleGetIssuesForMe(User user, Update update) {
-        ITrackerClient.IResponse<ITrackerClient.IPerson> me = Factory.getTrackerClient().getMe(user);
+        ITrackerClient.IResponse<ITrackerClient.IPerson> me = trackerClient.getMe(user);
 
         if (checkAndHandleErrors(user, update, me, true)) {
             return;
         }
 
         ITrackerClient.IResponse<ITrackerClient.IIssue[]> issues = Utils.getIssuesByPage(user, me, 1,
-                Integer.parseInt(Factory.getTelegramBundle().getString("constant.perPage")));
+                Integer.parseInt(bundle.getString("constant.perPage")), trackerClient);
 
         if (checkAndHandleErrors(user, update, issues, true)) {
             return;
         }
 
-        sendTextMessage(user, update, Utils.generateTextByTickets(issues, 1),
+        sendTextMessage(user, update, Utils.generateTextByTickets(issues, 1, bundle),
                 Utils.generateInlineKeyboardMarkupByPage(1,
-                        Integer.parseInt(issues.getHeadersData().getTotalPages())));
+                        Integer.parseInt(issues.getHeadersData().getTotalPages()), bundle));
     }
 
     private void handleCallbackQuery(User user, Update update) {
         int curPage = Integer.parseInt(update.callbackQuery().data());
 
-        ITrackerClient.IResponse<ITrackerClient.IPerson> me = Factory.getTrackerClient().getMe(user);
+        ITrackerClient.IResponse<ITrackerClient.IPerson> me = trackerClient.getMe(user);
 
         if (checkAndHandleErrors(user, update, me, true, true)) {
             return;
         }
 
         ITrackerClient.IResponse<ITrackerClient.IIssue[]> issues = Utils.getIssuesByPage(user, me, curPage,
-                Integer.parseInt(Factory.getTelegramBundle().getString("constant.perPage")));
+                Integer.parseInt(bundle.getString("constant.perPage")), trackerClient);
 
         if (checkAndHandleErrors(user, update, issues, true, true)) {
             return;
         }
 
-        Factory.getTelegramBot().execute(new EditMessageText(update.callbackQuery().message().chat().id(),
-                update.callbackQuery().message().messageId(), Utils.generateTextByTickets(issues, curPage))
+        bot.execute(new EditMessageText(update.callbackQuery().message().chat().id(),
+                update.callbackQuery().message().messageId(), Utils.generateTextByTickets(issues, curPage, bundle))
                 .replyMarkup(Utils.generateInlineKeyboardMarkupByPage(curPage,
-                        Integer.parseInt(issues.getHeadersData().getTotalPages()))).parseMode(ParseMode.HTML));
+                        Integer.parseInt(issues.getHeadersData().getTotalPages()), bundle)).parseMode(ParseMode.HTML));
     }
 
     private boolean checkAndHandleCancel(User user, Update update) {
-        if (checkIsCmd(update.message().text(), "cancel")) {
+        if (checkIsCmd(update.message().text(), "cancel", bundle)) {
             updateState(user, State.MAIN_MENU);
-            sendTextMessage(user, update, Factory.getTelegramBundle().getString("text.cancelAction"));
+            sendTextMessage(user, update, bundle.getString("text.cancelAction"));
 
             return true;
         }
@@ -291,7 +323,7 @@ public class TelegramHandler {
         } else if (response == null) {
             updateState(user, State.MAIN_MENU);
 
-            text = Factory.getTelegramBundle().getString("text.unknownError");
+            text = bundle.getString("text.unknownError");
         } else {
             StringBuilder errorText = new StringBuilder();
 
@@ -304,18 +336,18 @@ public class TelegramHandler {
             if (response.code() == 401 || response.code() == 403) {
                 updateState(user, State.MAIN_MENU);
 
-                text = String.format(Factory.getTelegramBundle().getString("text.forbidden"), errorText.toString());
+                text = String.format(bundle.getString("text.forbidden"), errorText.toString());
             } else {
                 if (forceReturn) {
                     updateState(user, State.MAIN_MENU);
                 }
 
-                text = String.format(Factory.getTelegramBundle().getString("text.error"), errorText.toString());
+                text = String.format(bundle.getString("text.error"), errorText.toString());
             }
         }
 
         if (isCallbackQuery) {
-            Factory.getTelegramBot().execute(new EditMessageText(update.callbackQuery().message().chat().id(),
+            bot.execute(new EditMessageText(update.callbackQuery().message().chat().id(),
                     update.callbackQuery().message().messageId(), text).replyMarkup(new InlineKeyboardMarkup()));
         } else {
             sendTextMessage(user, update, text);
@@ -330,14 +362,14 @@ public class TelegramHandler {
         }
 
         ITrackerClient.IResponse<Boolean> queue =
-                Factory.getTrackerClient().isQueueValid(user, update.message().text());
+                trackerClient.isQueueValid(user, update.message().text());
 
         if (checkAndHandleErrors(user, update, queue, false)) {
             return;
         }
 
         user.getIssue().setQueue(new Queue(update.message().text().toUpperCase()));
-        Factory.getTrackerIssueDao().updateTrackerIssue(user.getIssue());
+        trackerIssueDao.updateTrackerIssue(user.getIssue());
 
         updateState(user, State.NEED_SUMMARY);
         handleUpdate(update);
@@ -349,7 +381,7 @@ public class TelegramHandler {
         }
 
         user.getIssue().setSummary(update.message().text());
-        Factory.getTrackerIssueDao().updateTrackerIssue(user.getIssue());
+        trackerIssueDao.updateTrackerIssue(user.getIssue());
 
         updateState(user, State.NEED_DESCRIPTION);
         handleUpdate(update);
@@ -361,7 +393,7 @@ public class TelegramHandler {
         }
 
         user.getIssue().setDescription(update.message().text());
-        Factory.getTrackerIssueDao().updateTrackerIssue(user.getIssue());
+        trackerIssueDao.updateTrackerIssue(user.getIssue());
 
         updateState(user, State.NEED_ASSIGN_YOU);
         handleUpdate(update);
@@ -373,17 +405,17 @@ public class TelegramHandler {
         }
 
         if (!Pattern.matches("[A-Z]+-[0-9]+", key.toUpperCase())) {
-            sendTextMessage(user, update, Factory.getTelegramBundle().getString("text.incorrectIssueKey"));
+            sendTextMessage(user, update, bundle.getString("text.incorrectIssueKey"));
         } else {
             ITrackerClient.IResponse<ITrackerClient.IIssue> issue =
-                    Factory.getTrackerClient().getIssue(user, key.toUpperCase());
+                    trackerClient.getIssue(user, key.toUpperCase());
 
             if (checkAndHandleErrors(user, update, issue, false)) {
                 return;
             }
 
             ITrackerClient.IResponse<ITrackerClient.IComment[]> comments =
-                    Factory.getTrackerClient().getComments(user, issue.getData());
+                    trackerClient.getComments(user, issue.getData());
 
             if (checkAndHandleErrors(user, update, comments, true)) {
                 return;
@@ -392,7 +424,7 @@ public class TelegramHandler {
             updateState(user, State.MAIN_MENU);
 
             sendTextMessage(user, update,
-                    formatIssueWithCommentsPrettyHtml(issue.getData(), comments.getData()));
+                    formatIssueWithCommentsPrettyHtml(issue.getData(), comments.getData(), trackerClient.getBundle()));
         }
     }
 
@@ -409,21 +441,21 @@ public class TelegramHandler {
 
         switch (command) {
             case YES:
-                user.getIssue().setAssignee(Factory.getTrackerClient().getMe(user).getData());
-                Factory.getTrackerIssueDao().updateTrackerIssue(user.getIssue());
+                user.getIssue().setAssignee(trackerClient.getMe(user).getData());
+                trackerIssueDao.updateTrackerIssue(user.getIssue());
                 break;
             case NO:
                 user.getIssue().setAssignee(null);
-                Factory.getTrackerIssueDao().updateTrackerIssue(user.getIssue());
+                trackerIssueDao.updateTrackerIssue(user.getIssue());
                 break;
             case UNKNOWN:
             default:
-                sendTextMessage(user, update, Factory.getTelegramBundle().getString("text.incorrectAnswer"));
+                sendTextMessage(user, update, bundle.getString("text.incorrectAnswer"));
                 return;
         }
 
         ITrackerClient.IResponse<ITrackerClient.IIssue> issue =
-                Factory.getTrackerClient().createIssue(user, user.getIssue());
+                trackerClient.createIssue(user, user.getIssue());
 
         if (checkAndHandleErrors(user, update, issue, true)) {
             return;
@@ -432,9 +464,9 @@ public class TelegramHandler {
         updateState(user, State.MAIN_MENU);
 
         sendTextMessage(user, update,
-                String.format(Factory.getTelegramBundle().getString("text.createIssueSuccess"),
+                String.format(bundle.getString("text.createIssueSuccess"),
                         issue.getData().getSummary(), issue.getData().getKey(),
-                        generateIssueLink(issue.getData())));
+                        generateIssueLink(issue.getData(), bundle)));
     }
 
     private void handleExpectAccessToken(User user, Update update) {
@@ -442,24 +474,19 @@ public class TelegramHandler {
             return;
         }
 
-        if (Utils.checkHeader(update.message().text())) {
-            ITrackerClient.IResponse<Boolean> response =
-                    Factory.getTrackerClient().isTokenValid(user, update.message().text());
-
-            if (checkAndHandleErrors(user, update, response, false)) {
-                return;
-            }
+        if (Utils.checkHeader(update.message().text()) &&
+                trackerClient.isTokenValid(user, update.message().text()).isSuccessful()) {
 
             user.setTrackerAccessToken(update.message().text());
             updateState(user, State.MAIN_MENU);
 
             sendTextMessage(user, update,
-                    Factory.getTelegramBundle().getString("text.authSuccess"));
+                    bundle.getString("text.authSuccess"));
         } else {
-            String text = Factory.getTelegramBundle().getString("text.authError")
+            String text = bundle.getString("text.authError")
                     + "\n"
-                    + String.format(Factory.getTelegramBundle().getString("text.needAccessToken"),
-                    Factory.getTrackerClient().getAuthLink());
+                    + String.format(bundle.getString("text.needAccessToken"),
+                    trackerClient.getAuthLink());
             sendTextMessage(user, update, text);
         }
     }
@@ -473,20 +500,20 @@ public class TelegramHandler {
         try {
             organisationId = Long.parseLong(update.message().text());
         } catch (NumberFormatException e) {
-            String text = Factory.getTelegramBundle().getString("text.parseOrgIdError")
+            String text = bundle.getString("text.parseOrgIdError")
                     + "\n"
-                    + Factory.getTelegramBundle().getString("text.needOrgId");
+                    + bundle.getString("text.needOrgId");
             sendTextMessage(user, update, text);
             return;
         }
 
-        StringBuilder text = new StringBuilder(Factory.getTelegramBundle().getString("text.parseOrgIdSuccess"));
+        StringBuilder text = new StringBuilder(bundle.getString("text.parseOrgIdSuccess"));
 
         user.setOrganisationId(organisationId);
         if (user.getTrackerAccessToken() == null) {
             updateState(user, State.EXPECT_ACCESS_TOKEN);
-            text.append("\n").append(String.format(Factory.getTelegramBundle().getString("text.needAccessToken"),
-                    Factory.getTrackerClient().getAuthLink()));
+            text.append("\n").append(String.format(bundle.getString("text.needAccessToken"),
+                    trackerClient.getAuthLink()));
         } else {
             updateState(user, State.MAIN_MENU);
         }
@@ -496,7 +523,7 @@ public class TelegramHandler {
 
     private void updateState(User user, State state) {
         user.setState(state);
-        Factory.getUserDao().updateUser(user);
+        userDao.updateUser(user);
     }
 
     public enum State {

@@ -1,7 +1,8 @@
 package ru.hse.cs.java2020.task03.tracker.models;
 
 import ru.hse.cs.java2020.task03.tracker.ITrackerClient;
-import ru.hse.cs.java2020.task03.utils.Factory;
+
+import java.util.ResourceBundle;
 
 import static ru.hse.cs.java2020.task03.utils.Utils.*;
 
@@ -73,56 +74,22 @@ public class Issue implements ITrackerClient.IIssue {
         this.followers = (Person[]) followers;
     }
 
-    public String toString() {
-        StringBuilder issue = new StringBuilder(key + ": " + summary + "\n");
-
-        if (description != null) {
-            issue.append(description);
-        } else {
-            issue.append("(").append(Factory.getTrackerBundle().getString("text.noDescription")).append(")");
-        }
-
-        issue.append("\n\n").append(Factory.getTrackerBundle().getString("text.author")).append(": ")
-             .append(createdBy.getDisplay());
-
-        if (assignee != null) {
-            issue.append("\n").append(Factory.getTrackerBundle().getString("text.assignee")).append(": ")
-                 .append(assignee.getDisplay());
-        }
-
-        if (followers == null) {
-            return issue.toString();
-        }
-
-        if (followers.length == 1) {
-            issue.append("\n").append(Factory.getTrackerBundle().getString("text.follower")).append(": ")
-                 .append(followers[0].getDisplay());
-        } else if (followers.length > 1) {
-            issue.append("\n").append(Factory.getTrackerBundle().getString("text.followers")).append(":");
-            for (ITrackerClient.IPerson follower : followers) {
-                issue.append("\n ").append(follower.getDisplay());
-            }
-        }
-
-        return issue.toString();
-    }
-
-    public String formatPrettyHtml() {
+    public String formatPrettyHtml(ResourceBundle bundle) {
         StringBuilder issue = new StringBuilder(
-                ahref(key, Factory.getTrackerBundle().getString("url.baseTrackerUrl") + "/" + key) + ": " + bold(summary)
+                ahref(key, bundle.getString("url.baseTrackerUrl") + "/" + key) + ": " + bold(summary)
                         + "\n");
 
         if (description != null) {
             issue.append(description);
         } else {
-            issue.append("(").append(italic(Factory.getTrackerBundle().getString("text.noDescription"))).append(")");
+            issue.append("(").append(italic(bundle.getString("text.noDescription"))).append(")");
         }
 
-        issue.append("\n\n").append(bold(Factory.getTrackerBundle().getString("text.author"))).append(": ")
+        issue.append("\n\n").append(bold(bundle.getString("text.author"))).append(": ")
              .append(createdBy.getDisplay());
 
         if (assignee != null) {
-            issue.append("\n").append(bold(Factory.getTrackerBundle().getString("text.assignee"))).append(": ")
+            issue.append("\n").append(bold(bundle.getString("text.assignee"))).append(": ")
                  .append(assignee.getDisplay());
         }
 
@@ -131,10 +98,10 @@ public class Issue implements ITrackerClient.IIssue {
         }
 
         if (followers.length == 1) {
-            issue.append("\n").append(bold(Factory.getTrackerBundle().getString("text.follower"))).append(": ")
+            issue.append("\n").append(bold(bundle.getString("text.follower"))).append(": ")
                  .append(followers[0].getDisplay());
         } else if (followers.length > 1) {
-            issue.append("\n").append(bold(Factory.getTrackerBundle().getString("text.followers"))).append(":");
+            issue.append("\n").append(bold(bundle.getString("text.followers"))).append(":");
             for (ITrackerClient.IPerson follower : followers) {
                 issue.append("\n ").append(follower.getDisplay());
             }

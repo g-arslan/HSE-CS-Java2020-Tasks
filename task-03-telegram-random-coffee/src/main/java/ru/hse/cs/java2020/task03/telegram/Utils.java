@@ -7,53 +7,57 @@ import ru.hse.cs.java2020.task03.tracker.ITrackerClient;
 import ru.hse.cs.java2020.task03.tracker.models.Filter;
 import ru.hse.cs.java2020.task03.tracker.models.FilterRequest;
 import ru.hse.cs.java2020.task03.tracker.models.Person;
-import ru.hse.cs.java2020.task03.utils.Factory;
+
+import java.util.ResourceBundle;
 
 import static ru.hse.cs.java2020.task03.utils.Utils.bold;
 
 public class Utils {
-    static String generateTextByTickets(ITrackerClient.IResponse<ITrackerClient.IIssue[]> issues, int curPage) {
+    static String generateTextByTickets(ITrackerClient.IResponse<ITrackerClient.IIssue[]> issues, int curPage,
+            ResourceBundle bundle) {
         StringBuilder text = new StringBuilder();
         int totalPages = Integer.parseInt(issues.getHeadersData().getTotalPages());
 
         for (ITrackerClient.IIssue issue : issues.getData()) {
             text.append(issue.getKey()).append(": ").append(bold(issue.getSummary())).append("\n")
-                .append(Factory.getTelegramBundle()
-                               .getString("text.moreInfo")).append(" ").append(generateIssueLink(issue)).append("\n\n");
+                .append(bundle
+                        .getString("text.moreInfo")).append(" ").append(generateIssueLink(issue, bundle))
+                .append("\n\n");
         }
 
         if (totalPages > 1) {
-            text.append(String.format(Factory.getTelegramBundle().getString("text.pageXFromY"), curPage, totalPages));
+            text.append(String.format(bundle.getString("text.pageXFromY"), curPage, totalPages));
         }
 
         return text.toString();
     }
 
-    static String generateIssueLink(ITrackerClient.IIssue issue) {
-        return Factory.getTelegramBundle().getString("command.get_issue") + "_" + issue.getKey().replace('-', '_');
+    static String generateIssueLink(ITrackerClient.IIssue issue, ResourceBundle bundle) {
+        return bundle.getString("command.get_issue") + "_" + issue.getKey().replace('-', '_');
     }
 
-    static InlineKeyboardMarkup generateInlineKeyboardMarkupByPage(int curPage, int totalPages) {
+    static InlineKeyboardMarkup generateInlineKeyboardMarkupByPage(int curPage, int totalPages,
+            ResourceBundle bundle) {
         InlineKeyboardMarkup inlineKeyboardMarkup = null;
 
         if (totalPages > 1) {
             if (curPage == 1) {
                 inlineKeyboardMarkup = new InlineKeyboardMarkup(new InlineKeyboardButton[]{
-                        new InlineKeyboardButton(Factory.getTelegramBundle().getString("text.nextPage")).callbackData(
+                        new InlineKeyboardButton(bundle.getString("text.nextPage")).callbackData(
                                 Integer.toString(curPage + 1))
                 });
             } else if (curPage == totalPages) {
                 inlineKeyboardMarkup = new InlineKeyboardMarkup(new InlineKeyboardButton[]{
                         new InlineKeyboardButton(
-                                Factory.getTelegramBundle().getString("text.previousPage")).callbackData(
+                                bundle.getString("text.previousPage")).callbackData(
                                 Integer.toString(curPage - 1))
                 });
             } else {
                 inlineKeyboardMarkup = new InlineKeyboardMarkup(new InlineKeyboardButton[]{
                         new InlineKeyboardButton(
-                                Factory.getTelegramBundle().getString("text.previousPage")).callbackData(
+                                bundle.getString("text.previousPage")).callbackData(
                                 Integer.toString(curPage - 1)),
-                        new InlineKeyboardButton(Factory.getTelegramBundle().getString("text.nextPage")).callbackData(
+                        new InlineKeyboardButton(bundle.getString("text.nextPage")).callbackData(
                                 Integer.toString(curPage + 1))
                 });
             }
@@ -63,10 +67,10 @@ public class Utils {
     }
 
     static ITrackerClient.IResponse<ITrackerClient.IIssue[]> getIssuesByPage(User user,
-            ITrackerClient.IResponse<ITrackerClient.IPerson> me, int page, int perPage) {
+            ITrackerClient.IResponse<ITrackerClient.IPerson> me, int page, int perPage, ITrackerClient trackerClient) {
         me.getData().setDisplay(null);
 
-        return Factory.getTrackerClient().filterIssues(user, new FilterRequest(new Filter(
+        return trackerClient.filterIssues(user, new FilterRequest(new Filter(
                 (Person) me.getData())), page, perPage);
     }
 
@@ -81,8 +85,8 @@ public class Utils {
         return true;
     }
 
-    static boolean checkIsCmd(String text, String cmd) {
-        return text.toLowerCase().startsWith(Factory.getTelegramBundle().getString("command." + cmd).toLowerCase())
-                || text.toLowerCase().equals(Factory.getTelegramBundle().getString("button." + cmd).toLowerCase());
+    static boolean checkIsCmd(String text, String cmd, ResourceBundle bundle) {
+        return text.toLowerCase().startsWith(bundle.getString("command." + cmd).toLowerCase())
+                || text.toLowerCase().equals(bundle.getString("button." + cmd).toLowerCase());
     }
 }

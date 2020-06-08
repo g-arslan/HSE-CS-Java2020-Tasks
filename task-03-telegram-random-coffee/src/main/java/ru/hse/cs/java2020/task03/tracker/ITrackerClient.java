@@ -1,6 +1,10 @@
 package ru.hse.cs.java2020.task03.tracker;
 
+import java.util.ResourceBundle;
+
 public interface ITrackerClient {
+    ResourceBundle getBundle();
+
     String getAuthLink();
 
     IResponse<Boolean> isTokenValid(IUser user, String token);
@@ -140,6 +144,6 @@ public interface ITrackerClient {
 
         void setFollowers(ITrackerClient.IPerson[] followers);
 
-        String formatPrettyHtml();
+        String formatPrettyHtml(ResourceBundle bundle);
     }
 }
