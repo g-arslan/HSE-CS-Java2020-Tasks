@@ -3,7 +3,12 @@ package ru.hse.cs.java2020.task03.models;
 import ru.hse.cs.java2020.task03.telegram.TelegramHandler;
 import ru.hse.cs.java2020.task03.tracker.ITrackerClient;
 
-import javax.persistence.*;
+import javax.persistence.Entity;
+import javax.persistence.FetchType;
+import javax.persistence.Id;
+import javax.persistence.MapsId;
+import javax.persistence.OneToOne;
+import javax.persistence.Table;
 
 @Entity
 @Table(name = "users")

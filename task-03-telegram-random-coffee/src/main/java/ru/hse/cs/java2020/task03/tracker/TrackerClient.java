@@ -4,9 +4,18 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
-import okhttp3.*;
+import okhttp3.HttpUrl;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
+import ru.hse.cs.java2020.task03.tracker.models.Comment;
 import ru.hse.cs.java2020.task03.tracker.models.Error;
-import ru.hse.cs.java2020.task03.tracker.models.*;
+import ru.hse.cs.java2020.task03.tracker.models.FilterRequest;
+import ru.hse.cs.java2020.task03.tracker.models.HeadersData;
+import ru.hse.cs.java2020.task03.tracker.models.Issue;
+import ru.hse.cs.java2020.task03.tracker.models.Person;
+import ru.hse.cs.java2020.task03.tracker.models.TrackerResponse;
 
 import java.io.IOException;
 import java.lang.reflect.Type;
@@ -76,8 +85,6 @@ public class TrackerClient implements ITrackerClient {
 
         Request request = requestBuilder.build();
 
-        System.out.println(request.toString());
-
         try (Response response = httpClient.newCall(request).execute()) {
             TrackerResponse<T> trackerResponse =
                     new TrackerResponse<>(response.body().string(), response.isSuccessful(), response.code());
@@ -92,7 +99,6 @@ public class TrackerClient implements ITrackerClient {
                 }
             }
 
-            System.out.println(trackerResponse.getBody());
             return trackerResponse;
         } catch (IOException e) {
             e.printStackTrace();

@@ -1,6 +1,9 @@
 package ru.hse.cs.java2020.task03.utils;
 
-public class Utils {
+public final class Utils {
+    private Utils() {
+    }
+
     public static String bold(String text) {
         return "<b>" + text + "</b>";
     }

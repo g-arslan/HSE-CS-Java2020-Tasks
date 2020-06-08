@@ -4,7 +4,9 @@ import ru.hse.cs.java2020.task03.tracker.ITrackerClient;
 
 import java.util.ResourceBundle;
 
-import static ru.hse.cs.java2020.task03.utils.Utils.*;
+import static ru.hse.cs.java2020.task03.utils.Utils.ahref;
+import static ru.hse.cs.java2020.task03.utils.Utils.bold;
+import static ru.hse.cs.java2020.task03.utils.Utils.italic;
 
 public class Issue implements ITrackerClient.IIssue {
     private String   summary;

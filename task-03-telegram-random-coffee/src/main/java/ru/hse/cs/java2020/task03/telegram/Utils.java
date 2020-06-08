@@ -12,7 +12,10 @@ import java.util.ResourceBundle;
 
 import static ru.hse.cs.java2020.task03.utils.Utils.bold;
 
-public class Utils {
+public final class Utils {
+    private Utils() {
+    }
+
     static String generateTextByTickets(ITrackerClient.IResponse<ITrackerClient.IIssue[]> issues, int curPage,
             ResourceBundle bundle) {
         StringBuilder text = new StringBuilder();

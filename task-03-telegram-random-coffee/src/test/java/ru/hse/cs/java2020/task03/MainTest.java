@@ -28,6 +28,9 @@ public class MainTest {
     private static final Gson GSON = new GsonBuilder().create();
 
     private TrackerClient getTrackerClient() {
+        final int codeOk = 200;
+        final int codeNotOk = 404;
+
         TrackerClient trackerClient = mock(TrackerClient.class);
 
         Person person = new Person();
@@ -51,23 +54,23 @@ public class MainTest {
         comment.setText("Комментарий");
         comment.setCreatedBy(person);
 
-        ITrackerClient.IResponse<ITrackerClient.IIssue> issueResponse = new TrackerResponse<>("", true, 200);
+        ITrackerClient.IResponse<ITrackerClient.IIssue> issueResponse = new TrackerResponse<>("", true, codeOk);
         issueResponse.setData(issue);
 
-        ITrackerClient.IResponse<ITrackerClient.IIssue[]> issuesResponse = new TrackerResponse<>("", true, 200);
+        ITrackerClient.IResponse<ITrackerClient.IIssue[]> issuesResponse = new TrackerResponse<>("", true, codeOk);
         issuesResponse.setData(new ITrackerClient.IIssue[]{issue});
         issuesResponse.setHeadersData(new HeadersData("2"));
 
-        ITrackerClient.IResponse<ITrackerClient.IPerson> personResponse = new TrackerResponse<>("", true, 200);
+        ITrackerClient.IResponse<ITrackerClient.IPerson> personResponse = new TrackerResponse<>("", true, codeOk);
         personResponse.setData(person);
 
-        ITrackerClient.IResponse<Boolean> trueResponse = new TrackerResponse<>("", true, 200);
+        ITrackerClient.IResponse<Boolean> trueResponse = new TrackerResponse<>("", true, codeOk);
         trueResponse.setData(true);
 
-        ITrackerClient.IResponse<Boolean> falseResponse = new TrackerResponse<>("", false, 410);
+        ITrackerClient.IResponse<Boolean> falseResponse = new TrackerResponse<>("", false, codeNotOk);
         trueResponse.setData(false);
 
-        ITrackerClient.IResponse<ITrackerClient.IComment[]> commentsResponse = new TrackerResponse<>("", true, 200);
+        ITrackerClient.IResponse<ITrackerClient.IComment[]> commentsResponse = new TrackerResponse<>("", true, codeOk);
         commentsResponse.setData(new ITrackerClient.IComment[]{comment, comment});
 
         when(trackerClient.isTokenValid(any(), eq("aaaaa"))).thenReturn(trueResponse);
@@ -146,77 +149,58 @@ public class MainTest {
                 "Введите ключ задачи",
                 "Неккоректный формат ключа, попробуйте ещё раз",
                 "<a href=\"https://tracker.yandex.ru/Q-1\">Q-1</a>: <b>Задача</b>\n"
-                        + "Описание\n"
-                        + "\n"
+                        + "Описание\n\n"
                         + "<b>Автор</b>: Вася\n"
                         + "<b>Исполнитель</b>: Вася\n"
                         + "<b>Наблюдатели</b>:\n"
                         + " Вася\n"
-                        + " Вася\n"
-                        + "\n"
-                        + "<b>Комментарии</b>:\n"
-                        + "\n"
+                        + " Вася\n\n"
+                        + "<b>Комментарии</b>:\n\n"
                         + "Вася:\n"
-                        + "<i>Комментарий</i>\n"
-                        + "\n"
+                        + "<i>Комментарий</i>\n\n"
                         + "Вася:\n"
                         + "<i>Комментарий</i>",
                 "Введите ключ задачи",
                 "Действие отменено",
                 "Неккоректный формат ключа, попробуйте ещё раз",
                 "<a href=\"https://tracker.yandex.ru/Q-1\">Q-1</a>: <b>Задача</b>\n"
-                        + "Описание\n"
-                        + "\n"
+                        + "Описание\n\n"
                         + "<b>Автор</b>: Вася\n"
                         + "<b>Исполнитель</b>: Вася\n"
                         + "<b>Наблюдатели</b>:\n"
                         + " Вася\n"
-                        + " Вася\n"
-                        + "\n"
-                        + "<b>Комментарии</b>:\n"
-                        + "\n"
+                        + " Вася\n\n"
+                        + "<b>Комментарии</b>:\n\n"
                         + "Вася:\n"
-                        + "<i>Комментарий</i>\n"
-                        + "\n"
+                        + "<i>Комментарий</i>\n\n"
                         + "Вася:\n"
                         + "<i>Комментарий</i>",
                 "<a href=\"https://tracker.yandex.ru/Q-1\">Q-1</a>: <b>Задача</b>\n"
-                        + "Описание\n"
-                        + "\n"
+                        + "Описание\n\n"
                         + "<b>Автор</b>: Вася\n"
                         + "<b>Исполнитель</b>: Вася\n"
                         + "<b>Наблюдатели</b>:\n"
                         + " Вася\n"
-                        + " Вася\n"
-                        + "\n"
-                        + "<b>Комментарии</b>:\n"
-                        + "\n"
+                        + " Вася\n\n"
+                        + "<b>Комментарии</b>:\n\n"
                         + "Вася:\n"
-                        + "<i>Комментарий</i>\n"
-                        + "\n"
+                        + "<i>Комментарий</i>\n\n"
                         + "Вася:\n"
                         + "<i>Комментарий</i>",
                 "<a href=\"https://tracker.yandex.ru/Q-1\">Q-1</a>: <b>Задача</b>\n"
-                        + "Описание\n"
-                        + "\n"
+                        + "Описание\n\n"
                         + "<b>Автор</b>: Вася\n"
                         + "<b>Исполнитель</b>: Вася\n"
                         + "<b>Наблюдатели</b>:\n"
                         + " Вася\n"
-                        + " Вася\n"
-                        + "\n"
-                        + "<b>Комментарии</b>:\n"
-                        + "\n"
+                        + " Вася\n\n"
+                        + "<b>Комментарии</b>:\n\n"
                         + "Вася:\n"
-                        + "<i>Комментарий</i>\n"
-                        + "\n"
+                        + "<i>Комментарий</i>\n\n"
                         + "Вася:\n"
                         + "<i>Комментарий</i>",
                 "Неккоректный формат ключа, попробуйте ещё раз",
-                "Q-1: <b>Задача</b>\n"
-                        + "Подробнее /get_issue_Q_1\n"
-                        + "\n"
-                        + "Страница 1 из 2"
+                "Q-1: <b>Задача</b>\nПодробнее /get_issue_Q_1\n\nСтраница 1 из 2"
         )), feedUpdates(new ArrayList<>(Arrays.asList(
                 "/start",
                 "555",
@@ -266,7 +250,7 @@ public class MainTest {
     private static class MockTelegramBot extends TelegramBot {
         private final List<String> messages;
 
-        public MockTelegramBot(String botToken) {
+        MockTelegramBot(String botToken) {
             super(botToken);
             messages = new ArrayList<>();
         }

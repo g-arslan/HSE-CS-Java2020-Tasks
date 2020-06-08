@@ -4,7 +4,10 @@ import java.util.ResourceBundle;
 
 import static ru.hse.cs.java2020.task03.utils.Utils.bold;
 
-public class Utils {
+public final class Utils {
+    private Utils() {
+    }
+
     public static String formatIssueWithCommentsPrettyHtml(ITrackerClient.IIssue issue,
             ITrackerClient.IComment[] comments, ResourceBundle bundle) {
         StringBuilder text = new StringBuilder(issue.formatPrettyHtml(bundle) + "\n\n");

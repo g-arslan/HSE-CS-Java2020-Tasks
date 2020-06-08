@@ -4,7 +4,12 @@ import ru.hse.cs.java2020.task03.tracker.models.Issue;
 import ru.hse.cs.java2020.task03.tracker.models.Person;
 import ru.hse.cs.java2020.task03.tracker.models.Queue;
 
-import javax.persistence.*;
+import javax.persistence.Access;
+import javax.persistence.AccessType;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.Id;
+import javax.persistence.Table;
 
 @Entity
 @Table(name = "tracker_issues")

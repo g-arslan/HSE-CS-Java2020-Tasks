@@ -13,15 +13,14 @@ import ru.hse.cs.java2020.task03.dao.ITrackerIssueDao;
 import ru.hse.cs.java2020.task03.dao.IUserDao;
 import ru.hse.cs.java2020.task03.models.TrackerIssue;
 import ru.hse.cs.java2020.task03.models.User;
+import static ru.hse.cs.java2020.task03.telegram.Utils.checkIsCmd;
+import static ru.hse.cs.java2020.task03.telegram.Utils.generateIssueLink;
 import ru.hse.cs.java2020.task03.tracker.ITrackerClient;
+import static ru.hse.cs.java2020.task03.tracker.Utils.formatIssueWithCommentsPrettyHtml;
 import ru.hse.cs.java2020.task03.tracker.models.Queue;
 
 import java.util.ResourceBundle;
 import java.util.regex.Pattern;
-
-import static ru.hse.cs.java2020.task03.telegram.Utils.checkIsCmd;
-import static ru.hse.cs.java2020.task03.telegram.Utils.generateIssueLink;
-import static ru.hse.cs.java2020.task03.tracker.Utils.formatIssueWithCommentsPrettyHtml;
 
 public class TelegramHandler {
     private final TelegramBot      bot;
@@ -81,8 +80,6 @@ public class TelegramHandler {
                 && user.getState() != State.EXPECT_ORG_ID) {
             updateState(user, State.NEED_ACCESS_TOKEN);
         }
-
-        System.out.println(update.message().from().username() + ": " + update.message().text());
 
         switch (user.getState()) {
             case NEED_ORG_ID:
@@ -333,7 +330,8 @@ public class TelegramHandler {
                 }
             }
 
-            if (response.code() == 401 || response.code() == 403) {
+            if (response.code() == Integer.parseInt(bundle.getString("code.401")) || response.code() == Integer
+                    .parseInt(bundle.getString("code.403"))) {
                 updateState(user, State.MAIN_MENU);
 
                 text = String.format(bundle.getString("text.forbidden"), errorText.toString());
@@ -474,8 +472,8 @@ public class TelegramHandler {
             return;
         }
 
-        if (Utils.checkHeader(update.message().text()) &&
-                trackerClient.isTokenValid(user, update.message().text()).isSuccessful()) {
+        if (Utils.checkHeader(update.message().text())
+                && trackerClient.isTokenValid(user, update.message().text()).isSuccessful()) {
 
             user.setTrackerAccessToken(update.message().text());
             updateState(user, State.MAIN_MENU);
