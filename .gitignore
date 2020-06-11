@@ -22,3 +22,6 @@ local.properties
 # Windows & OSX garbage
 .DS_Store
 Thumbs.db
+
+# DB
+*.sqlite

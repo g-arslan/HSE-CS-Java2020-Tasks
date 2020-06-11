@@ -1,0 +1,20 @@
+<?xml version='1.0' encoding='utf-8'?>
+<!DOCTYPE hibernate-configuration PUBLIC
+        "-//Hibernate/Hibernate Configuration DTD//EN"
+        "http://www.hibernate.org/dtd/hibernate-configuration-3.0.dtd">
+<hibernate-configuration>
+    <session-factory>
+        <property name="connection.url">jdbc:sqlite:/home/g-arslan/hse/HSE-CS-Java2020-Tasks/task-03-telegram-random-coffee/src/test/resources/testdb.sqlite</property>
+        <property name="dialect">org.hibernate.dialect.SQLiteDialect</property>
+        <property name="connection.driver_class">org.sqlite.JDBC</property>
+        <!-- <property name="connection.username"/> -->
+        <!-- <property name="connection.password"/> -->
+
+        <!-- DB schema will be updated if needed -->
+        <property name="hibernate.hbm2ddl.auto">create-drop</property>
+<!--        <property name="show_sql">true</property>-->
+
+        <mapping class="ru.hse.cs.java2020.task03.models.User"/>
+        <mapping class="ru.hse.cs.java2020.task03.models.TrackerIssue"/>
+    </session-factory>
+</hibernate-configuration>
